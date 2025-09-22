@@ -17,3 +17,8 @@ variable "stage" {
   description = "Deployment stage"
   default     = "dev"
 }
+
+variable "shutdown_minutes" {
+  description = "Minutes after which instance shuts down (0 = no shutdown)"
+  default     = 0
+}
