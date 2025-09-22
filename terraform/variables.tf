@@ -9,12 +9,12 @@ variable "instance_type" {
 }
 
 variable "key_name" {
-  description = "Your AWS key pair name"
-  default     = "my-key" # Change this to your key
+  description = "AWS Key Pair name"
+  default     = "your-key-name" # Replace with your AWS key
 }
 
 variable "stage" {
-  description = "Deployment stage"
+  description = "Deployment stage: dev or prod"
   default     = "dev"
 }
 
