@@ -1,37 +1,43 @@
-# TechEazy DevOps Assignment
-
-This repo contains Terraform + scripts to deploy the sample app on AWS EC2.
+# TechEazy DevOps Assignment - Lift & Shift
 
 ## Steps
 
-1. Clone this repo  
-   ```bash
-   git clone https://github.com/yourname/tech_eazy_devops_yourname.git
-   cd tech_eazy_devops_yourname/terraform
-2. Initialize Terraform
-
+## 1. Clone repo:
 ```bash
-terraform init
+git clone <your-repo-url>
+cd tech_eazy_devops_<yourname>
 ```
-3. Deploy EC2 instance
 
+
+
+## 2. Terraform setup:
 ```bash
+cd terraform
+terraform init
 terraform apply -auto-approve
 
 ```
 
-4. Get Public IP
+
+## 3. Get the public IP:
 ```bash
 terraform output instance_public_ip
 
 ```
-5. Access the app at
+## 4. Open in browser:
 ```bash
-http://<public-ip>:8080
+http://<public-ip>
 ```
-6. Destroy when done
 
+## 5. Destroy resources to save cost:
 ```bash
-
 terraform destroy -auto-approve
 ```
+
+## Notes
+
+- Stage selection via `stage` variable (dev or prod)
+- Instance auto-shutdown configurable via `shutdown_minutes`
+- App runs on port 80 through Nginx reverse proxy
+- Java version: OpenJDK 21
+- No secrets are stored in the repo
