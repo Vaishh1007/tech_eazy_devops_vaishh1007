@@ -1,31 +1,24 @@
-provider "aws" {
-  region = var.region
+variable "region" {
+  description = "AWS region"
+  default     = "us-east-1"
 }
 
-# Get Latest Ubuntu 22.04 AMI (safe filter)
-data "aws_ami" "ubuntu" {
-  most_recent = true
-  owners      = ["099720109477"] # Canonical
-
-  filter {
-    name   = "name"
-    values = ["ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-*"]
-  }
+variable "instance_type" {
+  description = "EC2 instance type"
+  default     = "t2.micro"
 }
 
-resource "aws_instance" "app_server" {
-  ami           = data.aws_ami.ubuntu.id
-  instance_type = var.instance_type
-  key_name      = var.key_name
-
-  user_data = file("${path.module}/../scripts/user_data.sh")
-
-  tags = {
-    Name = "tech-eazy-devops-instance"
-    Stage = var.stage
-  }
+variable "key_name" {
+  description = "AWS Key Pair name"
+  default     = "your-key-name" # Replace with your AWS key
 }
 
-output "public_ip" {
-  value = aws_instance.app_server.public_ip
+variable "stage" {
+  description = "Deployment stage: dev or prod"
+  default     = "dev"
+}
+
+variable "shutdown_minutes" {
+  description = "Minutes after which instance shuts down (0 = no shutdown)"
+  default     = 0
 }
