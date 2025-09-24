@@ -1,5 +1,3 @@
-# variables.tf for Assignment 2
-
 variable "region" {
   description = "AWS region"
   default     = "ap-south-1"
@@ -7,7 +5,7 @@ variable "region" {
 
 variable "ami_id" {
   description = "AMI ID for the EC2 instance"
-  default     = "ami-0c02fb55956c7d316"  # example Amazon Linux 2 AMI in ap-south-1
+  default     = "ami-0f58b397bc5c1f2e8" # Amazon Linux 2 in ap-south-1
 }
 
 variable "instance_type" {
@@ -17,5 +15,10 @@ variable "instance_type" {
 
 variable "key_name" {
   description = "AWS key pair name for SSH access"
-  default     = "your-key-name"  # replace with your actual key pair name
+  type        = string
+}
+
+variable "bucket_name" {
+  description = "Name of the S3 bucket (must be globally unique)"
+  type        = string
 }
