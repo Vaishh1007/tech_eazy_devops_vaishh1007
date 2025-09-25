@@ -1,44 +1,40 @@
 #!/bin/bash
-# Variables passed via Terraform environment
-export STAGE=${stage:-dev}
-export SHUTDOWN_MINUTES=${shutdown_minutes:-0}
+# EC2 bootstrap script for Assignment 2
 
-# Update system and install dependencies
-apt-get update -y
-apt-get install -y openjdk-21-jdk maven git nginx
+# Update system
+yum update -y
 
-# Optional auto-shutdown
-if [ "$SHUTDOWN_MINUTES" != "0" ]; then
-  shutdown -h +$SHUTDOWN_MINUTES &
-fi
+# Install dependencies
+yum install -y docker git awscli
 
-# Clone TechEazy sample app
-cd /home/ubuntu
-git clone https://github.com/Trainings-TechEazy/test-repo-for-devops.git
-cd test-repo-for-devops
+# Start & enable Docker
+systemctl start docker
+systemctl enable docker
 
-# Select config based on stage
-if [ "$STAGE" = "prod" ]; then
-  cp ../configs/prod_config.properties application.properties
-else
-  cp ../configs/dev_config.properties application.properties
-fi
+# Create app logs directory
+mkdir -p /app/logs
+echo "App started on $(date)" >> /app/logs/app.log
 
-# Build app
-mvn clean package -DskipTests
+# Create log upload script
+echo '#!/bin/bash' > /usr/local/bin/upload-logs.sh
+echo 'aws s3 cp /var/log/cloud-init.log s3://vaishh-assignment2-bucket-123/logs/system/' >> /usr/local/bin/upload-logs.sh
+echo 'aws s3 cp /app/logs/ s3://vaishh-assignment2-bucket-123/logs/app/ --recursive' >> /usr/local/bin/upload-logs.sh
 
-# Run app in background
-nohup java -jar target/techeazy-devops-0.0.1-SNAPSHOT.jar --server.port=8080 > app.log 2>&1 &
+chmod +x /usr/local/bin/upload-logs.sh
 
-# Configure Nginx reverse proxy to port 80
-cat > /etc/nginx/sites-available/techeazy <<EOL
-server {
-    listen 80;
-    location / {
-        proxy_pass http://127.0.0.1:8080;
-    }
-}
-EOL
-ln -s /etc/nginx/sites-available/techeazy /etc/nginx/sites-enabled/
-rm /etc/nginx/sites-enabled/default
-systemctl restart nginx
+# Create systemd service file
+echo '[Unit]' > /etc/systemd/system/upload-logs.service
+echo 'Description=Upload logs to S3 on shutdown' >> /etc/systemd/system/upload-logs.service
+echo 'DefaultDependencies=no' >> /etc/systemd/system/upload-logs.service
+echo 'Before=shutdown.target reboot.target halt.target' >> /etc/systemd/system/upload-logs.service
+echo '' >> /etc/systemd/system/upload-logs.service
+echo '[Service]' >> /etc/systemd/system/upload-logs.service
+echo 'Type=oneshot' >> /etc/systemd/system/upload-logs.service
+echo 'ExecStart=/usr/local/bin/upload-logs.sh' >> /etc/systemd/system/upload-logs.service
+echo 'RemainAfterExit=true' >> /etc/systemd/system/upload-logs.service
+echo '' >> /etc/systemd/system/upload-logs.service
+echo '[Install]' >> /etc/systemd/system/upload-logs.service
+echo 'WantedBy=halt.target reboot.target shutdown.target' >> /etc/systemd/system/upload-logs.service
+
+# Enable the service
+systemctl enable upload-logs.service
