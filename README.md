@@ -1,96 +1,74 @@
-# 🚀 TechEazy DevOps – Assignment 2
+# Assignment 2 – DevOps Internship (TechEazy)
 
-This is the **second assignment** for TechEazy DevOps internship.  
-It extends the automation from **Assignment 1 (EC2 + app deployment)** by adding **IAM Roles, S3 bucket, and log archival**.  
-
----
-
-## ✅ What’s New in Assignment 2
-1. **IAM Roles**
-   - **Role A (ReadOnly)** → Can only list objects in S3.  
-   - **Role B (WriteOnly)** → Can create bucket + upload logs, but cannot read/download.  
-   - EC2 instance runs with **Role B** (via Instance Profile).  
-
-2. **Private S3 Bucket**
-   - Bucket name is passed as a Terraform variable `bucket_name`.  
-   - If no name is given → deployment fails.  
-
-3. **Log Uploads**
-   - **System logs**: `/var/log/cloud-init.log` → `s3://<bucket>/system/`  
-   - **App logs**: `/home/ubuntu/app.log` → `s3://<bucket>/app/logs/`  
-
-4. **Lifecycle Rule**
-   - Logs auto-delete after **7 days**.  
-
-5. **Verification**
-   - Role A used to verify bucket contents (can **list files** but not download).  
+Implementation of **Assignment 2** using **Terraform** and **Bash**.  
 
 ---
 
-## ⚡ How to Deploy
+## 📌 Requirements & Implementation
 
-1. Clone repo and go to terraform folder:  
-   ```bash
-   cd terraform
-2. Initialize Terraform:
+| Requirement | Implementation |
+|-------------|----------------|
+| Create two IAM roles | `Assignment2-S3ReadOnly` (list/get), `Assignment2-S3Upload` (create/put) |
+| Attach Upload-only role to EC2 | `aws_iam_instance_profile.upload_profile` attached to instance |
+| Create private S3 bucket | `aws_s3_bucket.assignment2_bucket` (private, configurable name) |
+| Upload EC2 logs | `scripts/user_data.sh` uploads `/var/log/cloud-init.log` → `s3://bucket/logs/system/` |
+| Upload app logs | `scripts/user_data.sh` creates `/app/logs/app.log` → `s3://bucket/logs/app/` |
+| Lifecycle rule (7 days) | `aws_s3_bucket_lifecycle_configuration.assignment2_lifecycle` |
+| Verify with Read-only role | `null_resource.verify_s3_readonly` using `sts assume-role` |
+
+---
+
+# 📂 Project Structure
+```
+tech_eazy_devops_vaishh1007/
+├── scripts/
+│ └── user_data.sh
+│
+├── terraform/
+│ ├── main.tf
+│ ├── variables.tf
+│ ├── outputs.tf
+│ └── terraform.tfvars
+│
+├── .gitignore
+├── README.md
+```
+---
+## 📌 Explanation
+
+- **scripts/** → contains shell scripts used by EC2 instances (bootstrap, log upload).  
+- **terraform/** → all Terraform code:
+  - **main.tf** → defines AWS resources (IAM roles, S3 bucket, EC2 instance, lifecycle).  
+  - **variables.tf** → centralizes input variables with defaults.  
+  - **outputs.tf** → defines Terraform outputs for reference.  
+  - **terraform.tfvars** → allows user-specific overrides.  
+- **README.md** → overview of assignment, requirements, and usage instructions.  
+- **PROJECT_STRUCTURE.md** → detailed explanation of repository structure.  
+- **.gitignore** → ensures sensitive or generated files are not committed.  
+
+---
+✅ This structure keeps code, scripts, and documentation organized and easy to understand.  
+
+
+---
+
+## ▶️ Usage
 
 ```bash
+cd terraform
 
+# Initialize providers
 terraform init
+
+# Validate syntax
+terraform validate
+
+# Review execution plan
+terraform plan
+
+# Apply changes
+terraform apply
 ```
-3. Apply with bucket name (must be unique in AWS):
 
-```bash
 
-terraform apply -var="bucket_name=techeazy-logs-yourname"
-```
-4. Get EC2 Public IP:
-
-```bash
-
-terraform output instance_public_ip
-```
-5. Access application in browser:
-```bash
-http://<public-ip>:8080
-```
-## 📂 Verify Logs in S3
-1. SSH into EC2 and check app log:
-
-```bash
-
-cat /home/ubuntu/app.log
-```
-2. Confirm logs in S3 bucket:
-
-```bash
-
-aws s3 ls s3://techeazy-logs-yourname/app/logs/
-aws s3 ls s3://techeazy-logs-yourname/system/
-```
-3. Test Role A (ReadOnly):
-
-```bash
-
-# Should work
-aws s3 ls s3://techeazy-logs-yourname/
-
-# Should fail
-aws s3 cp s3://techeazy-logs-yourname/app/logs/app.log .
-```
-## 🛑 Cleanup
-
-To destroy resources and avoid charges:
-
-```bash
-
-terraform destroy -var="bucket_name=techeazy-logs-yourname" -auto-approve
-```
-## 🎯 Summary
-✅ Added IAM Roles (ReadOnly + WriteOnly).
-
-✅ EC2 uploads system & app logs to S3.
-
-✅ Logs expire after 7 days.
-
-✅ Verified with restricted IAM role access.
+✅ All assignment requirements are implemented with Terraform and Bash.
