@@ -1,44 +1,43 @@
 #!/bin/bash
-# Variables passed via Terraform environment
-export STAGE=${stage:-dev}
-export SHUTDOWN_MINUTES=${shutdown_minutes:-0}
+# EC2 bootstrap script for Assignment 3
 
-# Update system and install dependencies
-apt-get update -y
-apt-get install -y openjdk-21-jdk maven git nginx
+# Update system
+yum update -y
 
-# Optional auto-shutdown
-if [ "$SHUTDOWN_MINUTES" != "0" ]; then
-  shutdown -h +$SHUTDOWN_MINUTES &
-fi
+# Install dependencies
+yum install -y docker git awscli
 
-# Clone TechEazy sample app
-cd /home/ubuntu
-git clone https://github.com/Trainings-TechEazy/test-repo-for-devops.git
-cd test-repo-for-devops
+# Start Docker
+systemctl start docker
+systemctl enable docker
 
-# Select config based on stage
-if [ "$STAGE" = "prod" ]; then
-  cp ../configs/prod_config.properties application.properties
-else
-  cp ../configs/dev_config.properties application.properties
-fi
+# App logs
+mkdir -p /app/logs
+echo "App started on $(date)" >> /app/logs/app.log
 
-# Build app
-mvn clean package -DskipTests
+# Upload logs script
+cat <<'EOT' > /usr/local/bin/upload-logs.sh
+#!/bin/bash
+aws s3 cp /var/log/cloud-init.log s3://${BUCKET_NAME}/logs/system/
+aws s3 cp /app/logs/ s3://${BUCKET_NAME}/logs/app/ --recursive
+EOT
 
-# Run app in background
-nohup java -jar target/techeazy-devops-0.0.1-SNAPSHOT.jar --server.port=8080 > app.log 2>&1 &
+chmod +x /usr/local/bin/upload-logs.sh
 
-# Configure Nginx reverse proxy to port 80
-cat > /etc/nginx/sites-available/techeazy <<EOL
-server {
-    listen 80;
-    location / {
-        proxy_pass http://127.0.0.1:8080;
-    }
-}
-EOL
-ln -s /etc/nginx/sites-available/techeazy /etc/nginx/sites-enabled/
-rm /etc/nginx/sites-enabled/default
-systemctl restart nginx
+# Systemd service to upload logs on shutdown
+cat <<EOT > /etc/systemd/system/upload-logs.service
+[Unit]
+Description=Upload logs to S3 on shutdown
+DefaultDependencies=no
+Before=shutdown.target reboot.target halt.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/upload-logs.sh
+RemainAfterExit=true
+
+[Install]
+WantedBy=halt.target reboot.target shutdown.target
+EOT
+
+systemctl enable upload-logs.service

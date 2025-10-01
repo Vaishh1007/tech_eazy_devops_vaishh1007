@@ -1,0 +1,43 @@
+name: Deploy Assignment 3 Infra
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'deploy-*'
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: ap-south-1
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+
+      - name: Terraform Init
+        run: terraform -chdir=terraform init
+
+      - name: Terraform Plan
+        run: terraform -chdir=terraform plan -var="stage=dev"
+
+      - name: Terraform Apply
+        run: terraform -chdir=terraform apply -auto-approve -var="stage=dev"
+
+      - name: Get EC2 Public IP
+        id: ec2
+        run: |
+          IP=$(terraform -chdir=terraform output -raw instance_public_ip)
+          echo "EC2_IP=$IP" >> $GITHUB_ENV
+
+      - name: Health Check
+        run: |
+          echo "Waiting for instance..."
+          sleep 60
+          curl -v http://$EC2_IP:80 || echo "App not responding on port 80"
