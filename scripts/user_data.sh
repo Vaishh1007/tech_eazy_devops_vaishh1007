@@ -22,8 +22,8 @@ nohup python3 -m http.server 80 --directory /app > /app/logs/web.log 2>&1 &
 # Create log upload script
 cat << 'EOF' > /usr/local/bin/upload-logs.sh
 #!/bin/bash
-aws s3 cp /var/log/cloud-init.log s3://vaishh-assignment3-bucket-123/logs/system/
-aws s3 cp /app/logs/ s3://vaishh-assignment3-bucket-123/logs/app/ --recursive
+aws s3 cp /var/log/cloud-init.log s3://${bucket_name}/logs/system/
+aws s3 cp /app/logs/ s3://${bucket_name}/logs/app/ --recursive
 EOF
 
 chmod +x /usr/local/bin/upload-logs.sh

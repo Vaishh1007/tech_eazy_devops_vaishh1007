@@ -15,7 +15,8 @@ variable "key_name" {
 }
 
 variable "bucket_name" {
-  default = "vaishh-assignment3-bucket"
+  description = "Name of the S3 bucket for logs"
+  default     = "vaishh-assignment3-bucket-123" # must be globally unique
 }
 
 variable "stage" {

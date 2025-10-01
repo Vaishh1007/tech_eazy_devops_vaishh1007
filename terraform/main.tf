@@ -16,5 +16,7 @@ resource "aws_instance" "assignment3_instance" {
   # EOT
 
   # ✅ NEW: point to external script
-  user_data = file("${path.module}/../scripts/user_data.sh")
+  user_data = templatefile("${path.module}/../scripts/user_data.sh.tpl", {
+    bucket_name = var.bucket_name
+  })
 }
